@@ -6,7 +6,12 @@ import multer from 'multer';
 import path from 'path';
 
 const app = express();
-const port = 5000;
+const PORT = 5000;
+const HOST = 'localhost'; // Bind to all available network interfaces
+
+app.listen(PORT, HOST, () => {
+    console.log(`Server listening on http://${HOST}:${PORT}`);
+});
 
 app.use(cors());
 app.use(json());
@@ -324,6 +329,3 @@ app.delete('/classes/:classId/students/:studentId', (req, res) => {
     res.status(204).send();
 });
 
-app.listen(port, () => {
-    console.log(`Server listening on port http://localhost:${port}`);
-});
