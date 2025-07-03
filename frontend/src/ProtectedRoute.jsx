@@ -1,9 +1,16 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
+import loginService from './api/loginService';
 
 const ProtectedRoute = ({ element }) => {
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+  const location = useLocation();
+  const isAuthenticated = loginService.isAuthenticated();
 
-  return isAuthenticated ? element : <Navigate to="/login" />;
+  // If not authenticated, redirect to login with the intended destination
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return element;
 };
 
 export default ProtectedRoute;
