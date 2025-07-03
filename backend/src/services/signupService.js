@@ -68,7 +68,7 @@ class SignupService {
   generateToken(userId) {
     return jwt.sign(
       { userId },
-      process.env.JWT_SECRET || 'your-secret-key',
+      process.env.JWT_SECRET || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTIzLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTE1MjM2NzgsImV4cCI6MTc1MTUyNzI3OH0.W7mD_cco3T55lnNQ59ND1GiwTQwV6hfNVKxihJjb4Mk',
       { expiresIn: '7d' }
     );
   }
