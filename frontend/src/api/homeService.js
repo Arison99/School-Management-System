@@ -20,13 +20,24 @@ class HomeService {
    */
   async getHomeData() {
     try {
-      // First, get the user's school data
+      // Check if user has a school first
+      const hasSchool = await this.hasSchoolSetup();
+      
+      if (!hasSchool) {
+        return {
+          success: false,
+          error: 'NOT_FOUND',
+          message: 'No school profile found',
+          requiresSetup: true
+        };
+      }
+
+      // If school exists, fetch the data
       const schoolResponse = await axios.get(
         `${API_URL}/api/schools/my-school`,
         { headers: this.getAuthHeaders() }
       );
 
-      // Then, get statistics
       const statsResponse = await axios.get(
         `${API_URL}/api/schools/stats`,
         { headers: this.getAuthHeaders() }
