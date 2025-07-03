@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import signupService from '../api/SignupService';
+import loginService from '../api/loginService';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -42,8 +43,13 @@ const SignUp = () => {
       const result = await signupService.signup(formData);
       
       if (result.success) {
+        // Store authentication data if token is provided
+        if (result.data?.data?.token) {
+          loginService.setAuthData(result.data.data.token, result.data.data.user);
+        }
+        
         setMessage('Signup successful! Redirecting...');
-        setTimeout(() => navigate('/dashboard'), 1000);
+        setTimeout(() => navigate('/dashboard/home'), 1000);
       } else {
         if (result.redirectTo) {
           setMessage(result.message + '. Redirecting...');
