@@ -24,9 +24,7 @@ class LoginService {
 
       // Store token if login successful
       if (response.data.success && response.data.data.token) {
-        localStorage.setItem('authToken', response.data.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.data.user));
-        localStorage.setItem('isAuthenticated', 'true');
+        this.setAuthData(response.data.data.token, response.data.data.user);
       }
 
       return {
@@ -70,7 +68,22 @@ class LoginService {
    * @returns {boolean} Authentication status
    */
   isAuthenticated() {
-    return localStorage.getItem('isAuthenticated') === 'true' && !!this.getToken();
+    const token = this.getToken();
+    const isAuth = localStorage.getItem('isAuthenticated') === 'true';
+    
+    // Check both token and isAuthenticated flag
+    return !!(token && isAuth);
+  }
+
+  /**
+   * Set authentication data after successful login
+   * @param {string} token - JWT token
+   * @param {Object} user - User data
+   */
+  setAuthData(token, user) {
+    localStorage.setItem('authToken', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('isAuthenticated', 'true');
   }
 
   /**
