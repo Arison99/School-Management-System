@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import loginService from '../api/loginService';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || '/dashboard/home';
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -40,7 +42,8 @@ const Login = () => {
       
       if (result.success) {
         setMessage('Login successful! Redirecting...');
-        setTimeout(() => navigate('/dashboard'), 1000);
+        // Navigate to the page they were trying to access or dashboard
+        setTimeout(() => navigate(from, { replace: true }), 1000);
       } else {
         if (result.errors) {
           setErrors(result.errors);
