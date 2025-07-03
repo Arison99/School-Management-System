@@ -28,6 +28,7 @@ const School = () => {
   const [schoolData, setSchoolData] = useState(initialSchoolData);
   const [editedData, setEditedData] = useState(initialSchoolData);
   const [isEditing, setIsEditing] = useState(false);
+  const [isNewSchool, setIsNewSchool] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState("");
@@ -45,6 +46,7 @@ const School = () => {
       if (result.success && result.data) {
         setSchoolData(result.data);
         setEditedData(result.data);
+        setIsNewSchool(false);
         // Set photo previews if photos exist
         if (result.data.photo) {
           setPhotoPreview(`http://localhost:5000${result.data.photo}`);
@@ -54,8 +56,9 @@ const School = () => {
         }
       } else if (result.error === 'SCHOOL_NOT_FOUND') {
         // No school exists yet, show create form
+        setIsNewSchool(true);
         setIsEditing(true);
-        setMessage("Please fill in your school details");
+        setMessage("Please fill in your school details to get started");
       }
     } catch (error) {
       console.error("Error fetching school data:", error);
@@ -150,17 +153,18 @@ const School = () => {
     setIsLoading(true);
     try {
       let result;
-      if (schoolData.id) {
-        // Update existing school
-        result = await schoolService.updateSchool(editedData);
-      } else {
+      if (isNewSchool) {
         // Create new school
         result = await schoolService.createSchool(editedData);
+      } else {
+        // Update existing school
+        result = await schoolService.updateSchool(editedData);
       }
 
       if (result.success) {
         setMessage("School data saved successfully!");
         setIsEditing(false);
+        setIsNewSchool(false);
         // Refresh data
         await fetchSchoolData();
       } else {
@@ -190,7 +194,9 @@ const School = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-3xl mx-auto bg-white shadow rounded p-6">
-        <h1 className="text-3xl font-bold mb-6">School / Institute Data</h1>
+        <h1 className="text-3xl font-bold mb-6">
+          {isNewSchool ? "Create School Profile" : "School / Institute Data"}
+        </h1>
 
         {message && (
           <div className={`mb-4 p-3 rounded ${
@@ -511,9 +517,9 @@ const School = () => {
                   isLoading ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
-                <Save className="mr-2" size={18} /> {isLoading ? 'Saving...' : 'Save'}
+                <Save className="mr-2" size={18} /> {isLoading ? 'Saving...' : (isNewSchool ? 'Create School' : 'Save')}
               </button>
-              {schoolData.id && (
+              {!isNewSchool && (
                 <button
                   onClick={handleCancelClick}
                   disabled={isLoading}
