@@ -1,5 +1,4 @@
 import School from '../models/schoolModel.js';
-import User from '../models/signupModel.js';
 
 class SchoolRepository {
   /**
@@ -27,11 +26,7 @@ class SchoolRepository {
    */
   async findByUserId(userId) {
     return await School.findOne({ 
-      where: { userId },
-      include: [{
-        model: User,
-        attributes: ['id', 'name', 'email', 'institute']
-      }]
+      where: { userId }
     });
   }
 
