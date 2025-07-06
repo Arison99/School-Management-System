@@ -249,6 +249,15 @@ class SchoolService {
         };
       }
       
+      if (status === 404) {
+        return {
+          success: false,
+          error: 'SCHOOL_NOT_FOUND',
+          message: 'No school profile found',
+          requiresSetup: true
+        };
+      }
+      
       return {
         success: false,
         error: data.code || 'SERVER_ERROR',
