@@ -2,11 +2,22 @@ import schoolService from '../services/schoolService.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '../../../uploads/schools');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/schools/');
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -36,16 +47,15 @@ class SchoolController {
    */
   async createSchool(req, res) {
     try {
-      const validation = schoolService.validateSchoolData(req.body);
-      if (!validation.isValid) {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors: validation.errors
-        });
-      }
-
+      // Parse the school data - handle both JSON strings and regular form data
       const schoolData = { ...req.body };
+      
+      // Clean up empty strings - convert to null for optional fields
+      ['email', 'website', 'phone', 'address'].forEach(field => {
+        if (schoolData[field] === '') {
+          schoolData[field] = null;
+        }
+      });
       
       // Parse headMaster data if it's a string
       if (typeof schoolData.headMaster === 'string') {
@@ -63,6 +73,24 @@ class SchoolController {
         } catch (e) {
           schoolData.studentsPerClass = [];
         }
+      }
+
+      // Convert numeric fields
+      if (schoolData.totalStaff) {
+        schoolData.totalStaff = parseInt(schoolData.totalStaff) || 0;
+      }
+      if (schoolData.establishedYear) {
+        schoolData.establishedYear = parseInt(schoolData.establishedYear) || null;
+      }
+
+      // Validate school data
+      const validation = schoolService.validateSchoolData(schoolData);
+      if (!validation.isValid) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: validation.errors
+        });
       }
 
       if (req.file) {
@@ -119,6 +147,13 @@ class SchoolController {
   async updateSchool(req, res) {
     try {
       const updateData = { ...req.body };
+      
+      // Clean up empty strings - convert to null for optional fields
+      ['email', 'website', 'phone', 'address'].forEach(field => {
+        if (updateData[field] === '') {
+          updateData[field] = null;
+        }
+      });
       
       // Parse headMaster data if it's a string
       if (typeof updateData.headMaster === 'string') {
@@ -223,9 +258,22 @@ class SchoolController {
       });
     }
 
+    if (error.name === 'SequelizeValidationError') {
+      const errors = {};
+      error.errors.forEach(err => {
+        errors[err.path] = err.message;
+      });
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors
+      });
+    }
+
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }
