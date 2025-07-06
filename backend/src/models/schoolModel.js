@@ -60,12 +60,22 @@ const School = sequelize.define('School', {
     type: DataTypes.STRING(255),
     allowNull: true,
     validate: {
-      isEmail: true
+      isEmail: {
+        msg: 'Please enter a valid email address'
+      }
+    },
+    set(value) {
+      // Convert empty string to null
+      this.setDataValue('email', value === '' ? null : value);
     }
   },
   website: {
     type: DataTypes.STRING(255),
-    allowNull: true
+    allowNull: true,
+    set(value) {
+      // Convert empty string to null
+      this.setDataValue('website', value === '' ? null : value);
+    }
   },
   photo: {
     type: DataTypes.STRING(500),
