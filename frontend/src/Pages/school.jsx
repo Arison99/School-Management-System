@@ -354,6 +354,104 @@ const School = () => {
               )}
             </div>
 
+            {/* Address */}
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Address
+              </label>
+              {isEditing ? (
+                <textarea
+                  name="address"
+                  value={editedData.address || ""}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full border rounded p-2"
+                  rows="2"
+                />
+              ) : (
+                <p className="mt-1 text-gray-900">{schoolData.address || 'Not specified'}</p>
+              )}
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Phone Number
+              </label>
+              {isEditing ? (
+                <input
+                  type="tel"
+                  name="phone"
+                  value={editedData.phone || ""}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full border rounded p-2"
+                />
+              ) : (
+                <p className="mt-1 text-gray-900">{schoolData.phone || 'Not specified'}</p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
+              {isEditing ? (
+                <>
+                  <input
+                    type="email"
+                    name="email"
+                    value={editedData.email || ""}
+                    onChange={handleInputChange}
+                    className={`mt-1 block w-full border rounded p-2 ${errors.email ? 'border-red-500' : ''}`}
+                  />
+                  {errors.email && (
+                    <p className="text-red-500 text-xs italic mt-1">{errors.email}</p>
+                  )}
+                </>
+              ) : (
+                <p className="mt-1 text-gray-900">{schoolData.email || 'Not specified'}</p>
+              )}
+            </div>
+
+            {/* Website */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Website
+              </label>
+              {isEditing ? (
+                <input
+                  type="url"
+                  name="website"
+                  value={editedData.website || ""}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full border rounded p-2"
+                  placeholder="https://example.com"
+                />
+              ) : (
+                <p className="mt-1 text-gray-900">{schoolData.website || 'Not specified'}</p>
+              )}
+            </div>
+
+            {/* Established Year */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Established Year
+              </label>
+              {isEditing ? (
+                <input
+                  type="number"
+                  name="establishedYear"
+                  value={editedData.establishedYear || ""}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full border rounded p-2"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                />
+              ) : (
+                <p className="mt-1 text-gray-900">{schoolData.establishedYear || 'Not specified'}</p>
+              )}
+            </div>
+
             {/* Total Staff */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -418,7 +516,8 @@ const School = () => {
                   onChange={handleHeadMasterPhotoChange}
                   className="mt-1 block w-full"
                 />
-              ) : headMasterPhotoPreview ? (
+              ) : null}
+              {headMasterPhotoPreview ? (
                 <img
                   src={headMasterPhotoPreview}
                   alt="Head Master"
@@ -430,6 +529,7 @@ const School = () => {
                 </div>
               )}
             </div>
+
             {/* Head Master Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -444,7 +544,7 @@ const School = () => {
                   className="mt-1 block w-full border rounded p-2"
                 />
               ) : (
-                <p className="mt-1 text-gray-900">{schoolData.headMaster.head_master_name}</p>
+                <p className="mt-1 text-gray-900">{schoolData.headMaster.head_master_name || 'Not specified'}</p>
               )}
             </div>
 
@@ -462,7 +562,7 @@ const School = () => {
                   className="mt-1 block w-full border rounded p-2"
                 />
               ) : (
-                <p className="mt-1 text-gray-900">{schoolData.headMaster.head_master_age}</p>
+                <p className="mt-1 text-gray-900">{schoolData.headMaster.head_master_age || 'Not specified'}</p>
               )}
             </div>
 
@@ -480,7 +580,7 @@ const School = () => {
                   className="mt-1 block w-full border rounded p-2"
                 />
               ) : (
-                <p className="mt-1 text-gray-900">{schoolData.headMaster.head_master_nin}</p>
+                <p className="mt-1 text-gray-900">{schoolData.headMaster.head_master_nin || 'Not specified'}</p>
               )}
             </div>
 
@@ -499,7 +599,7 @@ const School = () => {
                 />
               ) : (
                 <p className="mt-1 text-gray-900">
-                  {schoolData.headMaster.head_master_educationLevel}
+                  {schoolData.headMaster.head_master_educationLevel || 'Not specified'}
                 </p>
               )}
             </div>
