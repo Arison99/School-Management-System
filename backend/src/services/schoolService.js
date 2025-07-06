@@ -195,7 +195,8 @@ class SchoolService {
       errors.location = 'Location is required';
     }
 
-    if (schoolData.email && !/\S+@\S+\.\S+/.test(schoolData.email)) {
+    // Email is optional, but if provided must be valid
+    if (schoolData.email && schoolData.email.trim() !== '' && !/\S+@\S+\.\S+/.test(schoolData.email)) {
       errors.email = 'Invalid email address';
     }
 
