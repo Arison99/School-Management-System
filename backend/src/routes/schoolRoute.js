@@ -1,11 +1,11 @@
 import express from 'express';
 import schoolController, { upload } from '../controllers/schoolController.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticateToken } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
 // All routes require authentication
-router.use(authenticate);
+router.use(authenticateToken);
 
 // School routes
 router.post('/', upload.single('photo'), schoolController.createSchool.bind(schoolController));
