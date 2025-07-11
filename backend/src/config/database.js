@@ -15,10 +15,20 @@ const sequelize = new Sequelize({
   storage: path.join(__dirname, '../../', 'School Mgt System.sqlite'),
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
   define: {
-    // SQLite doesn't have real boolean type, use INTEGER
     underscored: false,
     freezeTableName: false,
     timestamps: true
+  },
+  // SQLite specific options
+  dialectOptions: {
+    // Enable foreign keys
+    foreignKeys: true
+  },
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
   }
 });
 
