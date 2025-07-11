@@ -14,24 +14,30 @@ const __dirname = dirname(__filename);
 // Load environment variables
 dotenv.config();
 
+// Import models to establish associations
+import User from './src/models/signupModel.js';
+import School from './src/models/schoolModel.js';
+import Class from './src/models/classModel.js';
+import Student from './src/models/studentModel.js';
+
 // Import routes
 import signupRoute from './src/routes/signupRoute.js';
 import loginRoute from './src/routes/loginRoute.js';
 import schoolRoute from './src/routes/schoolRoute.js';
-
-// Import models to establish associations
-import User from './src/models/signupModel.js';
-import School from './src/models/schoolModel.js';
+import classRoute from './src/routes/classRoute.js';
+import studentRoute from './src/routes/studentRoute.js';
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 6001;
 const HOST = process.env.HOST || 'localhost';
 
 // Create uploads directories if they don't exist
 const uploadsDir = path.join(__dirname, 'uploads');
 const schoolsDir = path.join(__dirname, 'uploads/schools');
+const classesDir = path.join(__dirname, 'uploads/classes');
+const studentsDir = path.join(__dirname, 'uploads/students');
 
-[uploadsDir, schoolsDir].forEach(dir => {
+[uploadsDir, schoolsDir, classesDir, studentsDir].forEach(dir => {
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
         console.log(`Created directory: ${dir}`);
@@ -50,8 +56,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadsDir));
 
 // Database connection and sync
-sequelize.authenticate()
-    .then(() => {
+const initializeDatabase = async () => {
+    try {
+        await sequelize.authenticate();
         console.log('SQLite database connection established successfully');
         console.log(`Database file: School Mgt System.sqlite`);
         
@@ -59,20 +66,30 @@ sequelize.authenticate()
         School.belongsTo(User, { foreignKey: 'userId' });
         User.hasOne(School, { foreignKey: 'userId' });
         
-        return sequelize.sync({ alter: true });
-    })
-    .then(() => {
+        Class.belongsTo(School, { foreignKey: 'schoolId' });
+        School.hasMany(Class, { foreignKey: 'schoolId' });
+        
+        Student.belongsTo(Class, { foreignKey: 'classId', as: 'class' });
+        Class.hasMany(Student, { foreignKey: 'classId', as: 'students' });
+        
+        // Sync database without altering existing tables
+        await sequelize.sync({ force: false, alter: false });
         console.log('Database synchronized successfully');
-    })
-    .catch((error) => {
+    } catch (error) {
         console.error('Database connection error:', error);
         process.exit(1);
-    });
+    }
+};
+
+// Initialize database
+initializeDatabase();
 
 // API Routes
 app.use('/api/signup', signupRoute);
 app.use('/api/login', loginRoute);
 app.use('/api/schools', schoolRoute);
+app.use('/api/classes', classRoute);
+app.use('/api/students', studentRoute);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
