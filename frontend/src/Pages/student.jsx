@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import studentService from '../api/studentService';
 
 /* ----- StudentRow Component ----- */
 /* Renders one student record with inline editing. */
 const StudentRow = ({ student, onUpdateStudent, onDeleteStudent }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedStudent, setEditedStudent] = useState({ ...student });
+  const [photoFile, setPhotoFile] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -15,21 +17,36 @@ const StudentRow = ({ student, onUpdateStudent, onDeleteStudent }) => {
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setPhotoFile(file);
       setEditedStudent((prev) => ({
         ...prev,
-        photo: URL.createObjectURL(file),
+        photoPreview: URL.createObjectURL(file),
       }));
     }
   };
 
   const handleSave = () => {
-    onUpdateStudent(editedStudent);
+    const dataToUpdate = { ...editedStudent };
+    if (photoFile) {
+      dataToUpdate.photo = photoFile;
+    }
+    delete dataToUpdate.photoPreview;
+    onUpdateStudent(dataToUpdate);
     setIsEditing(false);
+    setPhotoFile(null);
   };
 
   const handleCancel = () => {
     setEditedStudent({ ...student });
     setIsEditing(false);
+    setPhotoFile(null);
+  };
+
+  const getPhotoUrl = (photo) => {
+    if (editedStudent.photoPreview) return editedStudent.photoPreview;
+    if (photo && photo.startsWith('http')) return photo;
+    if (photo && photo.startsWith('/')) return `http://localhost:6001${photo}`;
+    return photo;
   };
 
   return (
@@ -42,6 +59,7 @@ const StudentRow = ({ student, onUpdateStudent, onDeleteStudent }) => {
             value={editedStudent.studentNumber}
             onChange={handleChange}
             className="border rounded p-1 w-full"
+            disabled
           />
         ) : (
           student.studentNumber
@@ -119,13 +137,17 @@ const StudentRow = ({ student, onUpdateStudent, onDeleteStudent }) => {
             name="photo"
             onChange={handlePhotoChange}
             className="border rounded p-1 w-full"
+            accept="image/*"
           />
         ) : (
           student.photo && (
             <img
-              src={student.photo}
+              src={getPhotoUrl(student.photo)}
               alt="Student"
               className="h-16 w-16 object-cover rounded-full"
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
             />
           )
         )}
@@ -183,7 +205,7 @@ StudentRow.propTypes = {
 };
 
 /* ----- ClassCard Component ----- */
-/* Renders a class “card” with editable class details and its list of students. */
+/* Renders a class "card" with editable class details and its list of students. */
 const ClassCard = ({ classData, onUpdateClass }) => {
   const [isEditingClass, setIsEditingClass] = useState(false);
   const [editedClass, setEditedClass] = useState({ ...classData });
@@ -195,9 +217,10 @@ const ClassCard = ({ classData, onUpdateClass }) => {
     age: "",
     fatherName: "",
     motherName: "",
-    photo: "",
+    photo: null,
   });
-  const [message, setMessage] = useState(''); // State for messages
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleClassChange = (e) => {
     const { name, value } = e.target;
@@ -209,13 +232,18 @@ const ClassCard = ({ classData, onUpdateClass }) => {
     if (file) {
       setEditedClass((prev) => ({
         ...prev,
-        photo: URL.createObjectURL(file),
+        photo: file,
+        photoPreview: URL.createObjectURL(file),
       }));
     }
   };
 
   const saveClassChanges = () => {
-    onUpdateClass(editedClass);
+    const dataToUpdate = { ...editedClass };
+    // Remove preview URL before sending to backend
+    delete dataToUpdate.photoPreview;
+    delete dataToUpdate.students; // Don't send students array when updating class
+    onUpdateClass(dataToUpdate);
     setIsEditingClass(false);
   };
 
@@ -224,44 +252,98 @@ const ClassCard = ({ classData, onUpdateClass }) => {
     setIsEditingClass(false);
   };
 
-  const addStudent = () => {
-    // Require at least student number and name before adding.
-    if (newStudent.studentNumber && newStudent.studentName) {
-      const studentToAdd = { ...newStudent, id: Date.now() };
-      const updatedClass = {
-        ...classData,
-        students: [...classData.students, studentToAdd],
-      };
-      onUpdateClass(updatedClass);
-      // Reset add-student form.
+  const handleNewStudentPhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
       setNewStudent({
-        studentNumber: "",
-        studentName: "",
-        dob: "",
-        age: "",
-        fatherName: "",
-        motherName: "",
-        photo: "",
+        ...newStudent,
+        photo: file,
+        photoPreview: URL.createObjectURL(file),
       });
-      setShowAddStudent(false);
-      setMessage('Student added successfully!'); // Set success message
-      setTimeout(() => setMessage(''), 3000); // Clear message after 3 seconds
-    } else {
-      setMessage('Student Number and Student Name are required.'); // Set error message
-      setTimeout(() => setMessage(''), 3000); // Clear message after 3 seconds
     }
   };
 
-  const updateStudent = (updatedStudent) => {
-    const updatedStudents = classData.students.map((s) =>
-      s.id === updatedStudent.id ? updatedStudent : s
-    );
-    onUpdateClass({ ...classData, students: updatedStudents });
+  const addStudent = async () => {
+    if (newStudent.studentNumber && newStudent.studentName) {
+      setLoading(true);
+      try {
+        const studentToAdd = { ...newStudent };
+        delete studentToAdd.photoPreview;
+        
+        const result = await studentService.addStudentToClass(classData.id, studentToAdd);
+        if (result.success) {
+          // Refresh the class data
+          const updatedClass = await studentService.getClassById(classData.id);
+          if (updatedClass.success) {
+            onUpdateClass(updatedClass.data);
+          }
+          // Reset form
+          setNewStudent({
+            studentNumber: "",
+            studentName: "",
+            dob: "",
+            age: "",
+            fatherName: "",
+            motherName: "",
+            photo: null,
+          });
+          setShowAddStudent(false);
+          setMessage('Student added successfully!');
+          setTimeout(() => setMessage(''), 3000);
+        } else {
+          setMessage(result.message || 'Failed to add student');
+        }
+      } catch (error) {
+        setMessage('Error adding student');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setMessage('Student Number and Student Name are required.');
+      setTimeout(() => setMessage(''), 3000);
+    }
   };
 
-  const deleteStudent = (studentId) => {
-    const updatedStudents = classData.students.filter((s) => s.id !== studentId);
-    onUpdateClass({ ...classData, students: updatedStudents });
+  const updateStudent = async (updatedStudent) => {
+    setLoading(true);
+    try {
+      const result = await studentService.updateStudent(
+        classData.id,
+        updatedStudent.id,
+        updatedStudent
+      );
+      if (result.success) {
+        // Refresh the class data
+        const updatedClass = await studentService.getClassById(classData.id);
+        if (updatedClass.success) {
+          onUpdateClass(updatedClass.data);
+        }
+      }
+    } catch (error) {
+      setMessage('Error updating student');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteStudent = async (studentId) => {
+    if (window.confirm('Are you sure you want to delete this student?')) {
+      setLoading(true);
+      try {
+        const result = await studentService.deleteStudent(classData.id, studentId);
+        if (result.success) {
+          // Refresh the class data
+          const updatedClass = await studentService.getClassById(classData.id);
+          if (updatedClass.success) {
+            onUpdateClass(updatedClass.data);
+          }
+        }
+      } catch (error) {
+        setMessage('Error deleting student');
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   return (
@@ -290,31 +372,37 @@ const ClassCard = ({ classData, onUpdateClass }) => {
               name="photo"
               onChange={handleClassPhotoChange}
               className="border rounded p-1"
+              accept="image/*"
             />
             <button
               onClick={saveClassChanges}
               className="bg-green-500 text-white px-2 py-1 rounded"
+              disabled={loading}
             >
               Save
             </button>
             <button
               onClick={cancelClassChanges}
               className="bg-gray-500 text-white px-2 py-1 rounded"
+              disabled={loading}
             >
               Cancel
             </button>
           </div>
         ) : (
           <div className="flex flex-wrap items-center space-x-4">
-            {classData.photo && (
+            {(classData.photoPreview || classData.photo) && (
               <img
-                src={classData.photo}
+                src={classData.photoPreview || `http://localhost:6001${classData.photo}`}
                 alt="Class"
                 className="h-16 w-16 object-cover rounded-full"
               />
             )}
             <h2 className="text-xl font-bold">{classData.className}</h2>
             <span className="text-gray-600">{classData.year}</span>
+            <span className="text-sm text-gray-500">
+              ({classData.students?.length || 0} students)
+            </span>
             <button
               onClick={() => setIsEditingClass(true)}
               className="bg-blue-500 text-white px-2 py-1 rounded"
@@ -326,12 +414,21 @@ const ClassCard = ({ classData, onUpdateClass }) => {
         <button
           onClick={() => setShowAddStudent(!showAddStudent)}
           className="bg-indigo-500 text-white px-2 py-1 rounded mt-2 sm:mt-0"
+          disabled={loading}
         >
           {showAddStudent ? "Cancel" : "Add Student"}
         </button>
       </div>
 
-      {message && <p className="mt-4 text-center text-green-500">{message}</p>} {/* Display message here */}
+      {message && (
+        <p className={`mt-4 text-center ${
+          message.includes('Error') || message.includes('required') 
+            ? 'text-red-500' 
+            : 'text-green-500'
+        }`}>
+          {message}
+        </p>
+      )}
 
       {showAddStudent && (
         <div className="mt-4 p-4 border rounded">
@@ -414,29 +511,30 @@ const ClassCard = ({ classData, onUpdateClass }) => {
               <input
                 type="file"
                 name="photo"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (file) {
-                    setNewStudent({
-                      ...newStudent,
-                      photo: URL.createObjectURL(file),
-                    });
-                  }
-                }}
+                onChange={handleNewStudentPhotoChange}
                 className="border rounded p-1 w-full"
+                accept="image/*"
               />
+              {newStudent.photoPreview && (
+                <img 
+                  src={newStudent.photoPreview} 
+                  alt="Preview" 
+                  className="mt-2 h-20 w-20 object-cover rounded"
+                />
+              )}
             </div>
           </div>
           <button
             onClick={addStudent}
             className="mt-4 bg-green-500 text-white px-4 py-2 rounded"
+            disabled={loading}
           >
-            Add Student
+            {loading ? 'Adding...' : 'Add Student'}
           </button>
         </div>
       )}
 
-      {classData.students.length > 0 && (
+      {classData.students && classData.students.length > 0 && (
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
@@ -497,72 +595,101 @@ const Students = () => {
   const [newClass, setNewClass] = useState({
       className: "",
       year: "",
-      photo: "",
+      photo: null,
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-      fetchClasses(); // Fetch classes when component mounts
-  }, []); // Empty dependency array ensures this runs only once on mount
+      fetchClasses();
+  }, []);
 
   const fetchClasses = async () => {
+      setLoading(true);
       try {
-          const response = await fetch('http://localhost:5000/classes'); // GET all classes
-          if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
+          const result = await studentService.getAllClasses();
+          if (result.success) {
+              setClasses(result.data);
+          } else {
+              setError(result.message);
           }
-          const classesData = await response.json();
-          setClasses(classesData);
       } catch (error) {
           console.error("Could not fetch classes:", error);
+          setError('Failed to load classes');
+      } finally {
+          setLoading(false);
       }
   };
 
   const addNewClass = async () => {
-    if (newClass.className && newClass.year) {
-        try {
-            const response = await fetch('http://localhost:5000/classes', { // POST new class
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(newClass),
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const addedClass = await response.json();
-            setClasses([...classes, addedClass]); // Update local state with the new class
-            setNewClass({ className: "", year: "", photo: "" }); // Reset input form
-        } catch (error) {
-            console.error("Error adding new class:", error);
-        }
+    const validation = studentService.validateClassData(newClass);
+    if (!validation.isValid) {
+        setError(Object.values(validation.errors).join(', '));
+        return;
     }
-};
 
-// Update a single class (its name, year, photo, or its students)Modified to call server
-const updateClass = async (updatedClass) => {
+    setLoading(true);
     try {
-        const response = await fetch(`http://localhost:5000/classes/${updatedClass.id}`, { // PUT update class
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(updatedClass),
-        });
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await studentService.createClass(newClass);
+        if (result.success) {
+            setClasses([...classes, result.data]);
+            setNewClass({ className: "", year: "", photo: null });
+            setError('');
+        } else {
+            setError(result.message);
         }
-        const updatedClassFromServer = await response.json(); // Get the updated class back from the server
-        setClasses(classes.map((cls) => (cls.id === updatedClassFromServer.id ? updatedClassFromServer : cls))); // Update local state
+    } catch (error) {
+        console.error("Error adding new class:", error);
+        setError('Failed to add class');
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const updateClass = async (updatedClass) => {
+    setLoading(true);
+    try {
+        const result = await studentService.updateClass(updatedClass.id, updatedClass);
+        if (result.success) {
+            setClasses(classes.map((cls) => (cls.id === result.data.id ? result.data : cls)));
+            setError('');
+        } else {
+            setError(result.message);
+        }
     } catch (error) {
         console.error("Error updating class:", error);
+        setError('Failed to update class');
+    } finally {
+        setLoading(false);
     }
-};
+  };
+
+  const handleClassPhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNewClass({ ...newClass, photo: file });
+    }
+  };
+
+  if (loading && classes.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-xl">Loading classes...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-4">School Management System</h1>
+        
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+
         <div className="bg-white shadow rounded p-4 mb-6">
           <h2 className="text-xl font-bold mb-2">Create New Class/Course</h2>
           <div className="grid grid-cols-2 gap-4">
@@ -595,21 +722,20 @@ const updateClass = async (updatedClass) => {
               <input
                 type="file"
                 name="photo"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (file) {
-                    setNewClass({ ...newClass, photo: URL.createObjectURL(file) });
-                  }
-                }}
+                onChange={handleClassPhotoChange}
                 className="border rounded p-1 w-full"
+                accept="image/*"
               />
             </div>
           </div>
           <button
             onClick={addNewClass}
-            className="mt-4 bg-indigo-500 text-white px-4 py-2 rounded"
+            disabled={loading}
+            className={`mt-4 bg-indigo-500 text-white px-4 py-2 rounded ${
+              loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-600'
+            }`}
           >
-            Add Class/Course
+            {loading ? 'Adding...' : 'Add Class/Course'}
           </button>
         </div>
 
