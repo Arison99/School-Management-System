@@ -14,18 +14,14 @@ class LoginController {
       if (!email || !password) {
         return res.status(400).json({
           success: false,
-          message: 'Email and password are required',
-          errors: {
-            email: !email ? 'Email is required' : undefined,
-            password: !password ? 'Password is required' : undefined,
-          }
+          message: 'Email and password are required'
         });
       }
 
-      // Attempt login
+      // Authenticate user
       const result = await loginService.authenticateUser(email, password);
 
-      res.status(200).json({
+      res.json({
         success: true,
         message: 'Login successful',
         data: {
@@ -56,7 +52,7 @@ class LoginController {
 
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: 'Internal server error'
     });
   }
 }
