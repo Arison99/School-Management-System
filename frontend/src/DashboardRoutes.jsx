@@ -1,6 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
-import Dashboard from './Pages/dashboard';
+import Dashboard from './Pages/Dashboard';
 import Home from './Pages/home'; // Adjust the path if Home.jsx is in a different directory
 import School from './Pages/school'; // Adjust the path if School.jsx is in a different directory
 import Student from './Pages/student'; // Adjust the path if Student.jsx is in a different directory
