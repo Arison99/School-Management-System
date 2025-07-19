@@ -108,9 +108,8 @@ const School = () => {
     const file = e.target.files[0];
     if (file) {
       // Validate file type and size
-      const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
       const maxSize = 2 * 1024 * 1024; // 2 MB
-      if (!allowedTypes.includes(file.type)) {
+      if (!ALLOWED_FILE_TYPES.includes(file.type)) {
         alert("Invalid file type. Please upload a JPEG, PNG, or GIF image.");
         return;
       }
