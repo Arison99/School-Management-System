@@ -147,7 +147,7 @@ const Home = () => {
                             alt="School"
                             className="w-32 h-32 rounded object-cover mr-6 mb-4 sm:mb-0"
                             onError={(e) => {
-                                e.target.src = '/placeholder-school.jpg';
+                                e.target.src = '/school.png';
                             }}
                         />
                         <div>
