@@ -107,6 +107,21 @@ const School = () => {
   const handleHeadMasterPhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file type and size
+      alert-autofix-6
+      const maxSize = 2 * 1024 * 1024; // 2 MB
+      if (!ALLOWED_FILE_TYPES.includes(file.type))
+      const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+      const maxSize = 2 * 1024 * 1024; // 2 MB
+      if (!allowedTypes.includes(file.type)) {
+       main
+        alert("Invalid file type. Please upload a JPEG, PNG, or GIF image.");
+        return;
+      }
+      if (file.size > maxSize) {
+        alert("File size exceeds 2 MB. Please upload a smaller image.");
+        return;
+      }
       setEditedData((prev) => ({
         ...prev,
         headMaster: {
