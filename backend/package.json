@@ -20,7 +20,8 @@
     "multer": "^2.0.2",
     "mysql2": "^3.6.0",
     "sequelize": "^6.37.7",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "express-rate-limit": "^8.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.0"

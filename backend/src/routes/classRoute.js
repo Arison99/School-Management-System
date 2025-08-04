@@ -1,8 +1,18 @@
 import express from 'express';
 import classController, { classUpload } from '../controllers/classController.js';
 import { authenticateToken, requireSchool } from '../middlewares/authMiddleware.js';
+import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
+
+// Apply rate limiting to all routes in this router
+const classLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+router.use(classLimiter);
 
 // All routes require authentication and school
 router.use(authenticateToken);
