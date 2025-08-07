@@ -347,3 +347,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Made with ❤️ by the Arison99
 
 </div>
+
+## GitAds Sponsored
+[![Sponsored by GitAds](https://gitads.dev/v1/ad-serve?source=arison99/school-management-system@github)](https://gitads.dev/v1/ad-track?source=arison99/school-management-system@github)
+
+
+
